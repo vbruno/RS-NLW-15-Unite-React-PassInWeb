@@ -15,6 +15,7 @@ import { ChangeEvent, useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/pt-br'
+import { ur } from '@faker-js/faker'
 
 dayjs.extend(relativeTime)
 dayjs.locale('pt-br')
@@ -28,33 +29,67 @@ type Attendee = {
 }
 
 export function AttendeeList() {
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState(() => {
+    const url = new URL(window.location.toString())
+
+    if (url.searchParams.has('search')) {
+      return url.searchParams.get('search') ?? ''
+    }
+
+    return ''
+  })
+  const [page, setPage] = useState(() => {
+    const url = new URL(window.location.toString())
+
+    if (url.searchParams.has('page')) {
+      return Number(url.searchParams.get('page'))
+    }
+
+    return 1
+  })
   const [attendees, setAttendees] = useState<Attendee[]>([])
   const [total, setTotal] = useState(0)
   const totalPage = Math.ceil(total / 10)
 
-  function goToNextPage() {
-    if (page >= totalPage) return
-    setPage(page + 1)
-  }
+  function setCurrentPage(page: number) {
+    const url = new URL(window.location.toString())
 
-  function goToBackPage() {
-    if (page <= 1) return
-    setPage(page - 1)
-  }
+    url.searchParams.set('page', String(page))
 
-  function goToFirstPage() {
-    setPage(1)
-  }
+    window.history.pushState({}, '', url)
 
-  function goToLastPage() {
-    setPage(totalPage)
+    setPage(page)
   }
 
   function onSearchInputChanged(event: ChangeEvent<HTMLInputElement>) {
-    setSearch(event.target.value)
-    setPage(1)
+    setCurrentSearch(event.target.value)
+    setCurrentPage(1)
+  }
+
+  function setCurrentSearch(search: string) {
+    const url = new URL(window.location.toString())
+
+    url.searchParams.set('search', search)
+
+    window.history.pushState({}, '', url)
+
+    setSearch(search)
+  }
+
+  function goToNextPage() {
+    setCurrentPage(page + 1)
+  }
+
+  function goToBackPage() {
+    setCurrentPage(page - 1)
+  }
+
+  function goToFirstPage() {
+    setCurrentPage(1)
+  }
+
+  function goToLastPage() {
+    setCurrentPage(totalPage)
   }
 
   useEffect(() => {
@@ -85,6 +120,7 @@ export function AttendeeList() {
             className="bg-transparent flex-1 outline-none border-0 p-0 text-sm ring-0 focus:ring-0"
             placeholder="Buscar participante..."
             onChange={onSearchInputChanged}
+            value={search}
           />
         </div>
       </div>
